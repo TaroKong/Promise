@@ -1,0 +1,14 @@
+{
+  "name": "promise",
+  "version": "1.0.0",
+  "description": "ECMAScript 6 的 Promise 实现",
+  "main": "promise.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "gulp": "^3.9.1"
+  }
+}

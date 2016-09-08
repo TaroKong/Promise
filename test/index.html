@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Promise 测试</title>
+    <script src="../src/Promise.js"></script>
+</head>
+<body>
+<script>
+    /*Promise(function ( resolve, reject ) {
+        reject( 'fail' );
+    }).then(function ( val ) {
+        console.log( val );
+    });*/
+
+    function p( name, isResolved ) {
+        isResolved = isResolved || false;
+
+        return new Promise(function (resolve, reject) {
+            isResolved ? resolve( name ) : reject( name );
+        });
+    }
+    console.log( p('p1',true) );
+    p('p1',true).then(function (name) {
+        console.log( name + '3' );
+    }, function (name) {
+        console.log( name + '4' );
+    });
+</script>
+</body>
+</html>
