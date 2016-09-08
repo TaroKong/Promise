@@ -28,12 +28,10 @@
 //    var p3 = p2.then(function (name) {console.log(name+'3');return name + '3'}).then(function (name) {
 //        console.log(name + '3_1');
 //    });
-    var p2_1 = p(p1, false);
-    var p2 = p2_1.then(function (val) {
+    //var p2_1 = p(p1, false);
+    var p2 = p(p1, false).then(function (val) {
         console.log( val + '1' );
         //return p1;
-    }, function ( val) {
-         console.log( val );
     }).catch(function (val) {
         console.log( val + '2342' );
         //return p1;

@@ -48,7 +48,7 @@
                         resolve( ret );
                     }
 
-                    //onFullfilled = null;
+                    onFullfilled = null;
 
                     return ret;
                 };
@@ -63,12 +63,13 @@
                             ( ret.PromiseStatus === RESOLVED ? resolve : reject )( val.PromiseValue );
                         });
                     } else {
-                        typeof onFullfilled === 'function' && typeof onRejected === 'function' ?
+                        typeof onFullfilled === 'function' &&
+                        typeof onRejected === 'function' ?
                             resolve( ret ) :
                             reject( ret );
                     }
 
-                    //onRejected = null;
+                    onRejected = null;
 
                     return ret;
                 };
@@ -77,7 +78,7 @@
                     _this.PromiseValue = _this.__onFullfilled( _this.PromiseValue );
                 }
 
-                if ( onFullfilled === null || _this.PromiseStatus === REJECTED ) {
+                if ( _this.PromiseStatus === REJECTED ) {
                     _this.PromiseValue = _this.__onRejected( _this.PromiseValue );
                 }
 
