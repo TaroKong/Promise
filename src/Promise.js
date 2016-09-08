@@ -1,5 +1,5 @@
 /**
- * Created by tarojiang on 2016/9/8.
+ * Created by TaroKong on 2016/9/8.
  */
 
 ( function ( global, factory ) {
@@ -18,48 +18,85 @@
         RESOLVED = 'resolved', // 已完成
         REJECTED = 'rejected'; // 已失败
 
-    var Promise = function ( resolver ) {
-            return new Promise.fn.init( resolver );
+    var Promise = function ( executor ) {
+            return new Promise.fn.init( executor );
+        },
+        isPromise = function ( obj ) {
+            return obj instanceof Promise;
         };
 
     Promise.fn = Promise.prototype = {
 
         constructor: Promise,
 
-        then: function (onResolve, onReject) {
+        then: function (onFullfilled, onRejected) {
 
             var _this = this;
-            console.log( this );
+
             return Promise(function (resolve, reject) {
 
-                _this.__onResolve = function ( val ) {
-                    var ret = typeof onResolve === 'function' ? onResolve( val ) : undefined;
-                    resolve( ret );
-                    onResolve = null;
+                _this.__onFullfilled = function ( val ) {
+                    var ret = typeof onFullfilled === 'function' ?
+                                onFullfilled( val ) :
+                                val;
+
+                    if ( isPromise( ret ) ) {
+                        ret.then(function ( val ) {
+                            ( ret.PromiseStatus === RESOLVED ? resolve : reject )( val.PromiseValue );
+                        });
+                    } else {
+                        resolve( ret );
+                    }
+
+                    //onFullfilled = null;
 
                     return ret;
                 };
 
-                _this.__onReject = function ( val ) {
-                    var ret = typeof onReject === 'function' ? onReject( val ) : undefined;
-                    resolve( ret );
-                    onReject = null;
+                _this.__onRejected = function ( val ) {
+                    var ret = typeof onRejected === 'function' ?
+                                onRejected( val ) :
+                                val;
+
+                    if ( isPromise( ret ) ) {
+                        ret.then(function ( val ) {
+                            ( ret.PromiseStatus === RESOLVED ? resolve : reject )( val.PromiseValue );
+                        });
+                    } else {
+                        typeof onFullfilled === 'function' && typeof onRejected === 'function' ?
+                            resolve( ret ) :
+                            reject( ret );
+                    }
+
+                    //onRejected = null;
 
                     return ret;
                 };
+
+                if ( _this.PromiseStatus === RESOLVED ) {
+                    _this.PromiseValue = _this.__onFullfilled( _this.PromiseValue );
+                }
+
+                if ( onFullfilled === null || _this.PromiseStatus === REJECTED ) {
+                    _this.PromiseValue = _this.__onRejected( _this.PromiseValue );
+                }
 
             });
 
         },
-        "catch": function () {
-
+        "catch": function ( onRejected ) {
+            return this.then(null, onRejected );
         },
         // 私有方法
         __resolve: function ( val ) {
-            //console.log( this );
+
             if ( this.PromiseStatus === PENDING ) {
                 this.PromiseStatus = RESOLVED;
-                this.PromiseValue = this.__onResolve( val );
+                this.PromiseValue = val; // 私有属性,缓存 resolve 的值
+
+                if ( typeof this.__onFullfilled === 'function' ) {
+                    this.PromiseValue = this.__onFullfilled( val );
+                }
             }
 
         },
@@ -68,11 +105,14 @@
 
             if ( this.PromiseStatus === PENDING ) {
                 this.PromiseStatus = REJECTED;
-                this.PromiseValue = this.__onReject( val );
-            }
+                this.PromiseValue = val; // 私有属性,缓存 reject 的值
 
+                if ( typeof this.__onRejected === 'function' ) {
+                    this.PromiseValue = this.__onRejected( val );
+                }
+            }
         }
-    };
+};
 
     Promise.all = function () {
 
@@ -86,10 +126,10 @@
 
     };
 
-    var init = Promise.fn.init = function ( resolver ) {
+    var init = Promise.fn.init = function ( executor ) {
         var _this = this;
 
-        if ( typeof resolver !== 'function' ) {
+        if ( typeof executor !== 'function' ) {
             throw new Error( 'Promise resolver is not a function' );
         }
 
@@ -97,12 +137,20 @@
         this.PromiseValue = undefined;
 
         // 回调
-        resolver(
+        executor(
             function /*resolve*/( val ) {
-                _this.__resolve( val );
+                if ( isPromise( val ) ) {
+                    _this[ val.PromiseStatus === RESOLVED ? '__resolve' : '__reject' ]( val );
+                } else {
+                    _this.__resolve( val );
+                }
             },
             function /*reject*/( val ) {
-                _this.__reject( val );
+                if ( isPromise( val ) ) {
+                    _this[ val.PromiseStatus === RESOLVED ? '__resolve' : '__reject' ]( val );
+                } else {
+                    _this.__reject( val );
+                }
             }
         );
     };
