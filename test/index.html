@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Promise 测试</title>
-    <script src="../src/Promise.js"></script>
+    <!--<script src="../src/Promise.js"></script>-->
 </head>
 <body>
 <script>
@@ -23,18 +23,23 @@
 
         });
     }
-    var p1 = p('p1', false);
+    var p1 = p('p1', true);
+    console.log( p1 );
 //    var p2 = p1.catch(function () {},function (name) {console.log(name + '2');return name;});
 //    var p3 = p2.then(function (name) {console.log(name+'3');return name + '3'}).then(function (name) {
 //        console.log(name + '3_1');
 //    });
-    //var p2_1 = p(p1, false);
-    var p2 = p(p1, false).then(function (val) {
-        console.log( val + '1' );
-        //return p1;
-    }).catch(function (val) {
-        console.log( val + '2342' );
-        //return p1;
+    var p2_1 = p(p1, true);
+    var p4 = p(p1, false);
+    console.log( p2_1 );
+    var p3 = p2_1.then(function (val) {
+        console.log( 'resolveed' );
+        console.log( val );
+        return p4;
+    }, function ( val ) {
+        console.log( 'rejected' );
+        console.log( val );
+        return p4;
     });
 
 </script>

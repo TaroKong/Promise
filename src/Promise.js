@@ -31,7 +31,7 @@
 
         then: function (onFullfilled, onRejected) {
 
-            var _this = this;
+            var _this = this.self;
 
             return Promise(function (resolve, reject) {
 
@@ -40,13 +40,16 @@
                                 onFullfilled( val ) :
                                 val;
 
+                    var callback = resolve;
+
                     if ( isPromise( ret ) ) {
-                        ret.then(function ( val ) {
-                            ( ret.PromiseStatus === RESOLVED ? resolve : reject )( val.PromiseValue );
-                        });
-                    } else {
-                        resolve( ret );
+                        if ( ret.PromiseStatus === REJECTED ) {
+                            callback = reject;
+                        }
+                        ret = ret.PromiseValue;
                     }
+
+                    callback( val );
 
                     onFullfilled = null;
 
@@ -58,16 +61,7 @@
                                 onRejected( val ) :
                                 val;
 
-                    if ( isPromise( ret ) ) {
-                        ret.then(function ( val ) {
-                            ( ret.PromiseStatus === RESOLVED ? resolve : reject )( val.PromiseValue );
-                        });
-                    } else {
-                        typeof onFullfilled === 'function' &&
-                        typeof onRejected === 'function' ?
-                            resolve( ret ) :
-                            reject( ret );
-                    }
+                    reject( ret );
 
                     onRejected = null;
 
@@ -86,14 +80,14 @@
 
         },
         "catch": function ( onRejected ) {
-            return this.then(null, onRejected );
+            return this.self.then(null, onRejected );
         },
         // 私有方法
         __resolve: function ( val ) {
 
             if ( this.PromiseStatus === PENDING ) {
                 this.PromiseStatus = RESOLVED;
-                this.PromiseValue = val; // 私有属性,缓存 resolve 的值
+                this.PromiseValue = val;
 
                 if ( typeof this.__onFullfilled === 'function' ) {
                     this.PromiseValue = this.__onFullfilled( val );
@@ -106,7 +100,7 @@
 
             if ( this.PromiseStatus === PENDING ) {
                 this.PromiseStatus = REJECTED;
-                this.PromiseValue = val; // 私有属性,缓存 reject 的值
+                this.PromiseValue = val;
 
                 if ( typeof this.__onRejected === 'function' ) {
                     this.PromiseValue = this.__onRejected( val );
@@ -128,11 +122,12 @@
     };
 
     var init = Promise.fn.init = function ( executor ) {
-        var _this = this;
 
         if ( typeof executor !== 'function' ) {
             throw new Error( 'Promise resolver is not a function' );
         }
+
+        var _this = this;
 
         this.PromiseStatus = PENDING;
         this.PromiseValue = undefined;
@@ -140,18 +135,19 @@
         // 回调
         executor(
             function /*resolve*/( val ) {
+                var fnName = '__resolve';
+
                 if ( isPromise( val ) ) {
-                    _this[ val.PromiseStatus === RESOLVED ? '__resolve' : '__reject' ]( val );
-                } else {
-                    _this.__resolve( val );
+                    if ( val.PromiseStatus === REJECTED ) {
+                        fnName = '__reject';
+                    }
+                    val = val.PromiseValue;
                 }
+
+                _this[ fnName ]( val );
             },
             function /*reject*/( val ) {
-                if ( isPromise( val ) ) {
-                    _this[ val.PromiseStatus === RESOLVED ? '__resolve' : '__reject' ]( val );
-                } else {
-                    _this.__reject( val );
-                }
+                _this.__reject( val );
             }
         );
     };
