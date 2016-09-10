@@ -18,15 +18,22 @@
         RESOLVED = 'resolved', // 已完成
         REJECTED = 'rejected'; // 已失败
 
+    function isType( type ) {
+
+        return function ( item ) {
+            return ({}).toString.call( item ).toLowerCase() === '[object ' + type.toLowerCase() + ']'
+        }
+    }
+
     var Promise = function ( executor ) {
             return new Promise.fn.init( executor );
         },
         isPromise = function ( obj ) {
             return obj instanceof Promise;
         },
-        isFunction = function ( fn ) {
-            return typeof fn === 'function';
-        };
+        isFunction = isType( 'Function' ),
+        isArray = isType( 'Array' ),
+        isObject = isType( 'Object' );
 
     Promise.fn = Promise.prototype = {
 
@@ -35,6 +42,7 @@
         then: function (onFullfilled, onRejected) {
 
             var _this = this,
+                Promise = this.constructor,
                 args = arguments;
 
             return Promise(function (resolve, reject) {
@@ -100,6 +108,31 @@
         "catch": function ( onRejected ) {
             return this.then( null, onRejected );
         },
+        done: function (onFullfilled, onRejected) {
+            this
+                .then(onFullfilled, onRejected)
+                .catch(function ( e ) {
+                    setTimeout(function () {
+                        throw e;
+                    }, 0);
+                });
+        },
+        finally: function ( callback ) {
+            var P = this.constructor;
+
+            return this.then(
+                function ( value ) {
+                    return P.resolve( callback() ).then(function () {
+                        return value;
+                    });
+                },
+                function ( reason ) {
+                    return P.resolve( callback() ).then(function () {
+                        throw reason;
+                    });
+                }
+            );
+        },
         // 私有方法
         __resolve: function ( val ) {
 
@@ -125,17 +158,95 @@
                 }
             }
         }
-};
+    };
 
-    Promise.all = function () {
+    Promise.all = function ( iterator ) {
+
+        var Promise = this;
+
+        return Promise(function (resolve, reject) {
+
+            if ( !isArray( iterator ) ) {
+                reject( 'TypeError: (var)[Symbol.iterator] is not a iterator.' );
+            } else {
+
+                var i = 0,
+                    l = iterator.length,
+                    count = 0,
+                    rejected = false,
+                    result = [];
+
+                for ( ; i < l; i++ ) {
+
+                    if ( rejected ) {
+                        break;
+                    }
+
+                    (function ( i, p ) {
+
+                        Promise.resolve( p ).then(
+                            function ( val ) {
+
+                                result[ i ] = val;
+
+                                if( ++count >= l ) {
+                                    resolve( result );
+                                    count = null;
+                                }
+
+                            }, function ( val ) {
+
+                                if ( rejected ) {
+                                    return false;
+                                }
+
+                                reject( val );
+
+                                rejected = true;
+                                count = null;
+
+                            }
+                        );
+
+                    } ( i, iterator[i] ));
+
+                }
+
+            }
+
+        });
 
     };
 
-    Promise.resolve = function () {
+    Promise.resolve = function ( x ) {
+
+        if ( isPromise( x ) ) { // Promise 实例
+            return x;
+        } else {
+            return this(
+                    x && isFunction( x.then ) ?
+                        x.then :
+                        function ( resolve ) {
+                            resolve( x );
+                        }
+                );
+        }
 
     };
 
-    Promise.reject = function () {
+    Promise.reject = function ( r ) {
+
+        if ( isPromise( r ) ) { // Promise 实例
+            return r;
+        } else {
+            return this(
+                r && isFunction( r.then ) ?
+                    r.then :
+                    function ( resolve, reject ) {
+                        reject( x );
+                    }
+            );
+        }
 
     };
 
@@ -151,23 +262,28 @@
         this.PromiseValue = undefined;
 
         // 回调
-        executor(
-            function /*resolve*/( val ) {
-                var fnName = '__resolve';
+        try {
+            executor(
+                function /*resolve*/( val ) {
+                    var fnName = '__resolve';
 
-                if ( isPromise( val ) ) {
-                    if ( val.PromiseStatus === REJECTED ) {
-                        fnName = '__reject';
+                    if ( isPromise( val ) ) {
+                        if ( val.PromiseStatus === REJECTED ) {
+                            fnName = '__reject';
+                        }
+                        val = val.PromiseValue;
                     }
-                    val = val.PromiseValue;
-                }
 
-                _this[ fnName ]( val );
-            },
-            function /*reject*/( val ) {
-                _this.__reject( val );
-            }
-        );
+                    _this[ fnName ]( val );
+                },
+                function /*reject*/( val ) {
+                    _this.__reject( val );
+                }
+            );
+        } catch ( error ) {
+            _this.__reject( error );
+        }
+
     };
 
     init.prototype = Promise.fn;
