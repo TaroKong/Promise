@@ -24,22 +24,23 @@
         });
     }
     var p1 = p('p1', true);
-    console.log( p1 );
 //    var p2 = p1.catch(function () {},function (name) {console.log(name + '2');return name;});
 //    var p3 = p2.then(function (name) {console.log(name+'3');return name + '3'}).then(function (name) {
 //        console.log(name + '3_1');
 //    });
-    var p2_1 = p(p1, true);
-    var p4 = p(p1, false);
-    console.log( p2_1 );
-    var p3 = p2_1.then(function (val) {
-        console.log( 'resolveed' );
+    var p2_1 = p(p1, false);
+    var p2_3 = p('p2_3', false);
+    var p2_2 = p2_1.then(function ( val ) {
+        console.log( 'resolved' );
         console.log( val );
-        return p4;
-    }, function ( val ) {
+        return p2_3;
+    });
+    var p2_4 = p2_2.catch(function ( val ) {
         console.log( 'rejected' );
         console.log( val );
-        return p4;
+        return p2_3;
+    }).catch(function ( val ) {
+        console.log( val );
     });
 
 </script>

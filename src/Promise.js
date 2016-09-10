@@ -23,6 +23,9 @@
         },
         isPromise = function ( obj ) {
             return obj instanceof Promise;
+        },
+        isFunction = function ( fn ) {
+            return typeof fn === 'function';
         };
 
     Promise.fn = Promise.prototype = {
@@ -31,56 +34,71 @@
 
         then: function (onFullfilled, onRejected) {
 
-            var _this = this.self;
+            var _this = this,
+                args = arguments;
 
             return Promise(function (resolve, reject) {
 
-                _this.__onFullfilled = function ( val ) {
-                    var ret = typeof onFullfilled === 'function' ?
-                                onFullfilled( val ) :
-                                val;
+                var fnMap = [ '__onFullfilled', '__onRejected' ],
+                    i = 0,
+                    l = 2;
 
-                    var callback = resolve;
+                for ( ; i < l; i++ ) {
 
-                    if ( isPromise( ret ) ) {
-                        if ( ret.PromiseStatus === REJECTED ) {
-                            callback = reject;
-                        }
-                        ret = ret.PromiseValue;
-                    }
+                    _this[ fnMap[ i ] ] = (function ( i, fn ) {
 
-                    callback( val );
+                        return function ( val ) {
+                            var isFun = isFunction( fn ),
+                                ret = isFun ? fn( val ) : val,
+                                executor = isFun || _this.PromiseStatus === RESOLVED ? resolve : reject;
 
-                    onFullfilled = null;
+                            if ( isPromise( ret ) ) {
 
-                    return ret;
-                };
+                                ret.then(
+                                    function ( val ) {
 
-                _this.__onRejected = function ( val ) {
-                    var ret = typeof onRejected === 'function' ?
-                                onRejected( val ) :
-                                val;
+                                        if ( !isFun ) {
+                                            reject( ret );
+                                        } else {
+                                            // TODO 是否存在 PromiseStatus 为 resolved 且 PromiseValue 为 Promise 实例的情况?
+                                        }
 
-                    reject( ret );
+                                    }, function ( val ) {
 
-                    onRejected = null;
+                                        if ( !isFun ) {
+                                            reject( ret );
+                                        } else {
+                                            reject( val );
+                                        }
 
-                    return ret;
-                };
+                                    }
+                                );
+
+                            } else {
+                                executor( ret );
+                            }
+
+                        };
+
+                    })( i, args[ i ] || undefined );
+
+                }
 
                 if ( _this.PromiseStatus === RESOLVED ) {
-                    _this.PromiseValue = _this.__onFullfilled( _this.PromiseValue );
+                    _this.__onFullfilled( _this.PromiseValue );
                 }
 
                 if ( _this.PromiseStatus === REJECTED ) {
-                    _this.PromiseValue = _this.__onRejected( _this.PromiseValue );
+                    _this.__onRejected( _this.PromiseValue );
                 }
+
+                args = null;
 
             });
 
         },
         "catch": function ( onRejected ) {
-            return this.self.then(null, onRejected );
+            return this.then( null, onRejected );
         },
         // 私有方法
         __resolve: function ( val ) {
@@ -90,7 +108,7 @@
                 this.PromiseValue = val;
 
                 if ( typeof this.__onFullfilled === 'function' ) {
-                    this.PromiseValue = this.__onFullfilled( val );
+                    this.__onFullfilled( val );
                 }
             }
 
@@ -103,7 +121,7 @@
                 this.PromiseValue = val;
 
                 if ( typeof this.__onRejected === 'function' ) {
-                    this.PromiseValue = this.__onRejected( val );
+                    this.__onRejected( val );
                 }
             }
         }
