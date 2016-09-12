@@ -53,12 +53,11 @@
 
                 for ( ; i < l; i++ ) {
 
-                    _this[ fnMap[ i ] ] = (function ( i, fn ) {
+                    _this[ fnMap[ i ] ] = (function ( fn ) {
 
                         return function ( val ) {
                             var isFun = isFunction( fn ),
-                                ret = isFun ? fn( val ) : val,
-                                executor = isFun || _this.PromiseStatus === RESOLVED ? resolve : reject;
+                                ret = isFun ? fn( val ) : val;
 
                             if ( isPromise( ret ) ) {
 
@@ -73,22 +72,18 @@
 
                                     }, function ( val ) {
 
-                                        if ( !isFun ) {
-                                            reject( ret );
-                                        } else {
-                                            reject( val );
-                                        }
+                                        reject( !isFun ? ret : val );
 
                                     }
                                 );
 
                             } else {
-                                executor( ret );
+                                ( isFun || _this.PromiseStatus === RESOLVED ? resolve : reject )( ret );
                             }
 
                         };
 
-                    })( i, args[ i ] || undefined );
+                    })( args[ i ] || undefined );
 
                 }
 
