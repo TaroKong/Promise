@@ -19,7 +19,6 @@
         REJECTED = 'rejected'; // 已失败
 
     function isType( type ) {
-
         return function ( item ) {
             return ({}).toString.call( item ).toLowerCase() === '[object ' + type.toLowerCase() + ']'
         }
@@ -34,6 +33,62 @@
         isFunction = isType( 'Function' ),
         isArray = isType( 'Array' ),
         isObject = isType( 'Object' );
+
+    var nextTick = typeof process === 'object' && typeof process.nextTick !== 'undefined' ? process.nextTick : (function () {
+        var callbacks = [],
+            pending = false,
+            timerFunc,
+            nextTickHandler = function () {
+                pending = false;
+                var copies = callbacks.slice(0);
+                callbacks = [];
+                for ( var i = 0, l = copies.length; i < l; i++ ) {
+                    copies[i]();
+                }
+            };
+
+        var MutationObserver =  window.MutationObserver ||
+                                window.WebkitMutationObserver ||
+                                window.MozMutationObserver;
+
+        try {
+
+            var counter = 1,
+                textNode = document.createTextNode( counter ),
+                observer = new MutationObserver( nextTickHandler );
+
+            observer.observe(textNode, {
+                characterData: true
+            });
+
+            timerFunc = function () {
+                counter = (counter + 1) % 2;
+                textNode.data = counter;
+            };
+
+        } catch ( e ) {
+
+            timerFunc = window.setImmediate || setTimeout;
+
+        }
+
+        return function ( cb, ctx ) {
+            var func  = ctx ?
+                function () {
+                    cb.call( ctx );
+                } :
+                cb;
+
+            callbacks.push( func );
+
+            if ( pending ) {
+                return false;
+            }
+
+            pending = true;
+            timerFunc( nextTickHandler, 0 );
+        };
+    }());
 
     Promise.fn = Promise.prototype = {
 
@@ -88,11 +143,15 @@
                 }
 
                 if ( _this.PromiseStatus === RESOLVED ) {
-                    _this.__onFullfilled( _this.PromiseValue );
+                    nextTick(function () {
+                        _this.__onFullfilled( _this.PromiseValue );
+                    });
                 }
 
                 if ( _this.PromiseStatus === REJECTED ) {
-                    _this.__onRejected( _this.PromiseValue );
+                    nextTick(function () {
+                        _this.__onRejected( _this.PromiseValue );
+                    });
                 }
 
                 args = null;
@@ -136,7 +195,9 @@
                 this.PromiseValue = val;
 
                 if ( typeof this.__onFullfilled === 'function' ) {
-                    this.__onFullfilled( val );
+                    nextTick(function () {
+                        this.__onFullfilled( val );
+                    }, this);
                 }
             }
 
@@ -149,7 +210,9 @@
                 this.PromiseValue = val;
 
                 if ( typeof this.__onRejected === 'function' ) {
-                    this.__onRejected( val );
+                    nextTick(function () {
+                        this.__onRejected( val );
+                    }, this);
                 }
             }
         }

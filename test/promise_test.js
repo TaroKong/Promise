@@ -3,17 +3,19 @@
  */
 
 if ( typeof module === 'object' && typeof require === 'function' ) {
-    var Promise = require( '../src/Promise' );
+    //var Promise = require( '../src/Promise' );
 }
 
 function p( name, isResolved, timeout ) {
     isResolved = isResolved || false;
     timeout = typeof timeout === 'undefined' ? 3000 : timeout;
 
-    return Promise(function (resolve, reject) {
-        setTimeout(function () {
+    return new Promise(function (resolve, reject) {
+        //setTimeout(function () {
+        console.log( 'start' );
             isResolved ? resolve( name ) : reject( name );
-        }, timeout);
+        console.log( 'end' );
+        //}, timeout);
     });
 }
 
@@ -40,11 +42,18 @@ setTimeout(function () {
 }, 5000);*/
 
 setTimeout(function () {
-    console.log(3);
+    console.log(6);
 }, 0);
 
-p(2, true, 0).then(function ( val ) {
+p(2, false).then(function ( val ) {
     console.log( val );
+    return 3;
+}).catch(function (val) {
+    console.log( val );
+    return 4;
+}).then(function ( val ) {
+    console.log( val );
+    return 5;
 });
 
 console.log( 1 );
