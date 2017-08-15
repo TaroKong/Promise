@@ -1,14 +1,11 @@
 {
-  "name": "promise",
+  "name": "promise-es2015",
   "version": "1.0.0",
-  "description": "ECMAScript 6 的 Promise 实现",
-  "main": "promise.js",
+  "description": "对 ECMAScript 6 中 Promise 对象的 ES5 的实现",
+  "main": "src/promise.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "gulp": "^3.9.1"
-  }
+  "license": "ISC"
 }
