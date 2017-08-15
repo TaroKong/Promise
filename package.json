@@ -1,11 +1,17 @@
 {
   "name": "promise-es2015",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "对 ECMAScript 6 中 Promise 对象的 ES5 的实现",
   "main": "src/promise.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": {
+    "name": "TaroKong"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TaroKong/Promise.git"
+  }
 }
